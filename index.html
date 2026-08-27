@@ -221,6 +221,16 @@ function fmtDateShort(iso){ const d = new Date(iso + 'T00:00:00'); if (isNaN(d))
 function fmtMoney(n){ return '₱' + Number(n||0).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}); }
 function initials(name){ return String(name||'?').split(' ').filter(Boolean).slice(0,2).map(p=>p[0]).join('').toUpperCase(); }
 function todayISO(offset=0){ const d = new Date(); d.setDate(d.getDate()+offset); return d.toISOString().slice(0,10); }
+function ageFromDob(dob){
+  if (!dob) return null;
+  const d = new Date(dob + 'T00:00:00');
+  if (isNaN(d)) return null;
+  const now = new Date();
+  let age = now.getFullYear() - d.getFullYear();
+  const m = now.getMonth() - d.getMonth();
+  if (m < 0 || (m === 0 && now.getDate() < d.getDate())) age--;
+  return age;
+}
 function relTime(iso){
   const diffMs = Date.now() - new Date(iso).getTime();
   const mins = Math.round(diffMs/60000);
@@ -347,7 +357,7 @@ function openModal({title, fields, initial={}, onSubmit, submitLabel='Save', not
       <form class="modal-body" id="modalForm">
         ${notice ? `<div class="form-notice">${esc(notice)}</div>` : ''}
         <div class="form-error" id="modalError" style="display:none;"></div>
-        ${fields.map(f=>renderField(f, initial[f.key])).join('')}
+        ${fields.map((f,i)=>(f.section && f.section!==fields[i-1]?.section ? `<div class="section-title" style="margin:${i===0?'0':'18px'} 0 4px;">${esc(f.section)}</div>` : '') + renderField(f, initial[f.key])).join('')}
         <div class="modal-actions">
           <button type="button" class="btn" data-close>Cancel</button>
           <button type="submit" class="btn btn-primary" id="modalSubmit">${esc(submitLabel)}</button>
@@ -828,20 +838,21 @@ function renderPatients(c){
       </div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Patient</th><th>Age / Sex</th><th>Phone</th><th>Last visit</th><th>Notes</th><th></th></tr></thead>
+          <thead><tr><th>Patient</th><th>Age / Sex</th><th>Phone</th><th>Chief complaint</th><th>Last visit</th><th>Notes</th><th></th></tr></thead>
           <tbody>
             ${rows.map(p=>`
               <tr>
                 <td><div class="person-cell"><div class="avatar">${initials(p.name)}</div><span class="cell-name">${esc(p.name)}</span></div></td>
-                <td>${p.age ?? '—'} · ${esc(p.sex||'—')}</td>
+                <td>${(p.dob ? ageFromDob(p.dob) : p.age) ?? '—'} · ${esc(p.sex||'—')}</td>
                 <td class="mono">${esc(p.phone||'')}</td>
+                <td class="cell-sub">${esc(p.chief_complaint||'—')}</td>
                 <td class="mono">${p.last_visit ? fmtDateShort(p.last_visit) : '—'}</td>
                 <td class="cell-sub">${esc(p.condition||'')}</td>
                 <td><div class="row-actions">
                   <button class="icon-btn" data-edit="${p.id}">${ICONS.edit}</button>
                   <button class="icon-btn" data-del="${p.id}">${ICONS.trash}</button>
                 </div></td>
-              </tr>`).join('') || `<tr><td colspan="6"><div class="empty-state">${ICONS.empty}<div>No patients match your search</div></div></td></tr>`}
+              </tr>`).join('') || `<tr><td colspan="7"><div class="empty-state">${ICONS.empty}<div>No patients match your search</div></div></td></tr>`}
           </tbody>
         </table>
       </div>
@@ -860,19 +871,40 @@ function renderPatients(c){
   }));
 }
 function patientForm(existing){
+  let initial = existing || {sex:'F', last_visit: todayISO(0)};
+  if (existing && !existing.first_name && existing.name){
+    const parts = existing.name.trim().split(/\s+/);
+    initial = {...existing, first_name: parts[0]||'', last_name: parts.slice(1).join(' ')||''};
+  }
   openModal({
-    title: existing ? 'Edit patient' : 'Add patient',
-    submitLabel: existing ? 'Save changes' : 'Add patient',
-    initial: existing || {sex:'F', last_visit: todayISO(0)},
+    title: existing ? 'Edit patient' : 'New patient',
+    submitLabel: existing ? 'Save changes' : 'Register patient',
+    initial,
     fields: [
-      {key:'name', label:'Full name', required:true},
-      {key:'age', label:'Age', type:'number', required:true},
+      {key:'first_name', label:'First name', required:true, section:'Demographics'},
+      {key:'middle_name', label:'Middle name'},
+      {key:'last_name', label:'Last name', required:true},
+      {key:'dob', label:'Date of birth', type:'date', required:true},
       {key:'sex', label:'Sex', type:'select', options:['F','M','Other']},
-      {key:'phone', label:'Phone number'},
+      {key:'phone', label:'Contact number'},
+      {key:'email', label:'Email', type:'email'},
+      {key:'address', label:'Address'},
+      {key:'height_cm', label:'Height (cm)', type:'number'},
+      {key:'weight_kg', label:'Weight (kg)', type:'number'},
+      {key:'emergency_contact_name', label:'Name', section:'Emergency contact'},
+      {key:'emergency_contact_phone', label:'Number'},
+      {key:'emergency_contact_relationship', label:'Relationship'},
+      {key:'chief_complaint', label:'Chief complaint', type:'textarea', section:'Visit details'},
+      {key:'medical_history', label:'Medical history', type:'textarea', placeholder:'Known conditions, allergies, ongoing medications…'},
       {key:'last_visit', label:'Last visit', type:'date'},
-      {key:'condition', label:'Notes / condition', type:'textarea'},
+      {key:'condition', label:'Additional notes', type:'textarea'},
     ],
-    async onSubmit(data){
+    async onSubmit(rawData){
+      const data = {...rawData};
+      data.name = [data.first_name, data.middle_name, data.last_name].filter(Boolean).join(' ').trim();
+      if (!data.name) throw new Error('First and last name are required.');
+      data.age = ageFromDob(data.dob);
+      ['height_cm','weight_kg'].forEach(k => { if (data[k]==='' || isNaN(data[k])) data[k] = null; });
       const { error } = existing
         ? await sb.from('patients').update(data).eq('id', existing.id)
         : await sb.from('patients').insert(data);
@@ -881,7 +913,7 @@ function patientForm(existing){
       await refreshActivity();
       await logActivity(`Patient ${existing?'updated':'added'}: ${data.name} — by ${currentUser.name}`);
       await refreshActivity();
-      toast(existing ? 'Patient updated' : 'Patient added');
+      toast(existing ? 'Patient updated' : 'Patient registered');
       renderView();
     }
   });
