@@ -1,0 +1,903 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Clover Life Payroll</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Instrument+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: left rail of sections on desktop (top tabs on phone); working area of ledgers and forms. Clover green accent on green-biased neutrals. */
+:root{
+  --bg:#f5f7f4; --surface:#ffffff; --sunk:#eef2ec; --line:#dbe3d8; --line-strong:#c3cfbf;
+  --fg:#17211a; --muted:#5d6b60; --faint:#8a978c;
+  --accent:#1f6b47; --accent-fg:#ffffff; --accent-soft:#e1efe6;
+  --good:#1d7a4a; --good-soft:#e2f3e8; --warn:#9a6200; --warn-soft:#fbf0d9; --bad:#b3322a; --bad-soft:#fbe6e3;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Instrument Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --r:8px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f1511; --surface:#161e18; --sunk:#1c261f; --line:#2a362d; --line-strong:#3a483d;
+  --fg:#e6ede7; --muted:#9daca0; --faint:#6f7e72;
+  --accent:#5cc28d; --accent-fg:#0b1a11; --accent-soft:#1d3427;
+  --good:#5cc28d; --good-soft:#1b3125; --warn:#e3b05a; --warn-soft:#352a14; --bad:#f08a80; --bad-soft:#3a1d1a;
+  color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --bg:#0f1511; --surface:#161e18; --sunk:#1c261f; --line:#2a362d; --line-strong:#3a483d;
+  --fg:#e6ede7; --muted:#9daca0; --faint:#6f7e72;
+  --accent:#5cc28d; --accent-fg:#0b1a11; --accent-soft:#1d3427;
+  --good:#5cc28d; --good-soft:#1b3125; --warn:#e3b05a; --warn-soft:#352a14; --bad:#f08a80; --bad-soft:#3a1d1a;
+  color-scheme:dark;}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:14px;line-height:1.45}
+h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:-.01em}
+h1{font-size:22px} h2{font-size:19px} h3{font-size:15px}
+.num,.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.shell{display:grid;grid-template-columns:220px minmax(0,1fr);min-height:100vh}
+.rail{border-right:1px solid var(--line);background:var(--surface);padding-block:20px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:16px;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;gap:20px}
+.brand{display:flex;gap:10px;align-items:center}
+.brand svg{flex:none}
+.brand b{font-family:var(--f-display);font-size:16px;display:block;line-height:1.1}
+.brand small{color:var(--muted);font-size:12px}
+nav{display:flex;flex-direction:column;gap:2px}
+nav button{all:unset;cursor:pointer;padding:8px 10px;border-radius:6px;color:var(--muted);font-weight:500;display:flex;justify-content:space-between;align-items:center}
+nav button:hover{background:var(--sunk);color:var(--fg)}
+nav button[aria-current="page"]{background:var(--accent-soft);color:var(--accent)}
+nav button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.rail .foot{margin-top:auto;font-size:12px;color:var(--faint)}
+main{padding-block:24px 64px;padding-left:28px;padding-right:max(28px,env(safe-area-inset-right,0px));min-width:0;display:flex;flex-direction:column;gap:20px}
+.head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}
+.head p{margin:4px 0 0;color:var(--muted)}
+.eyebrow{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.btn{font:inherit;font-weight:600;border:1px solid var(--line-strong);background:var(--surface);color:var(--fg);padding:7px 12px;border-radius:6px;cursor:pointer;display:inline-flex;gap:6px;align-items:center;white-space:nowrap}
+.btn:hover{border-color:var(--accent)}
+.btn:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.btn.primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.btn.danger{color:var(--bad);border-color:var(--bad)}
+.btn.ghost{border-color:transparent;background:transparent;color:var(--accent);padding:4px 6px}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
+.panel>.ph{padding:12px 16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.panel>.pb{padding:16px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;display:flex;flex-direction:column;gap:4px}
+.stat .v{font-family:var(--f-mono);font-size:20px;font-weight:500;font-variant-numeric:tabular-nums}
+.stat .s{font-size:12px;color:var(--muted)}
+.tw{overflow-x:auto}
+table{border-collapse:collapse;width:100%}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;background:var(--sunk);white-space:nowrap}
+td.r,th.r{text-align:right}
+tr.click{cursor:pointer} tr.click:hover td{background:var(--sunk)}
+tfoot td{font-weight:600;background:var(--sunk)}
+.pill{display:inline-block;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--sunk);color:var(--muted);white-space:nowrap}
+.pill.good{background:var(--good-soft);color:var(--good)} .pill.warn{background:var(--warn-soft);color:var(--warn)} .pill.bad{background:var(--bad-soft);color:var(--bad)} .pill.acc{background:var(--accent-soft);color:var(--accent)}
+.sub{color:var(--muted);font-size:12px}
+input,select,textarea{font:inherit;color:var(--fg);background:var(--surface);border:1px solid var(--line-strong);border-radius:6px;padding:7px 9px;width:100%;min-width:0}
+input[type=checkbox]{width:auto}
+td input.cell{width:76px;padding:5px 6px;text-align:right;font-family:var(--f-mono)}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);font-weight:500}
+label.chk{display:flex;gap:8px;align-items:center;font-size:13px}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.empty{padding:36px 16px;text-align:center;color:var(--muted);display:flex;flex-direction:column;gap:10px;align-items:center}
+.empty b{color:var(--fg);font-family:var(--f-display);font-size:16px}
+.note{background:var(--sunk);border-radius:6px;padding:10px 12px;color:var(--muted);font-size:13px}
+.note.warn{background:var(--warn-soft);color:var(--warn)}
+/* modal */
+.scrim{position:fixed;inset:0;background:rgba(10,20,14,.45);display:flex;align-items:flex-start;justify-content:center;padding:max(24px,env(safe-area-inset-top,0px)) 16px 24px;overflow:auto;z-index:50}
+.modal{background:var(--surface);border:1px solid var(--line);border-radius:10px;width:min(640px,100%);display:flex;flex-direction:column}
+.modal.wide{width:min(860px,100%)}
+.modal .mh{padding:14px 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:8px}
+.modal .mb{padding:18px;display:flex;flex-direction:column;gap:14px}
+.modal .mf{padding:12px 18px;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.toast{position:fixed;bottom:calc(16px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:9px 14px;border-radius:6px;font-weight:500;z-index:60;max-width:calc(100% - 32px)}
+/* payslip preview */
+.slip{border:1px solid var(--line-strong);border-radius:6px;padding:16px;display:flex;flex-direction:column;gap:12px;background:var(--surface)}
+.slip .cols{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.slip dl{display:grid;grid-template-columns:1fr auto;gap:3px 12px;margin:0;font-size:13px}
+.slip dt{color:var(--muted)} .slip dd{margin:0;text-align:right;font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.slip .tot{border-top:1px solid var(--line);padding-top:4px;font-weight:600;color:var(--fg)}
+.netbar{display:flex;justify-content:space-between;align-items:center;background:var(--accent-soft);color:var(--accent);border-radius:6px;padding:10px 14px;font-weight:600}
+.netbar .num{font-size:18px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:13px}
+.kv span:nth-child(odd){color:var(--muted)}
+@media (max-width:820px){
+  .shell{grid-template-columns:1fr}
+  .rail{position:sticky;top:env(safe-area-inset-top,0px);height:auto;flex-direction:row;align-items:center;gap:12px;padding-block:10px;padding-right:max(16px,env(safe-area-inset-right,0px));border-right:0;border-bottom:1px solid var(--line);z-index:20;overflow-x:auto}
+  body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+  .brand small,.rail .foot{display:none}
+  nav{flex-direction:row}
+  nav button{white-space:nowrap;padding:6px 10px}
+  main{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:18px 48px}
+  .grid2,.grid3,.slip .cols{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:no-preference){.btn,nav button{transition:background .12s,border-color .12s}}
+body{margin:0}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="rail">
+    <div class="brand">
+      <svg width="30" height="30" viewBox="0 0 32 32" aria-hidden="true"><g fill="var(--accent)"><circle cx="11" cy="11" r="6"/><circle cx="21" cy="11" r="6"/><circle cx="11" cy="21" r="6"/><circle cx="21" cy="21" r="6"/></g><circle cx="16" cy="16" r="2.4" fill="var(--surface)"/></svg>
+      <div><b>Clover Life Payroll</b><small>Clinic &amp; Enterprises</small></div>
+    </div>
+    <nav id="nav"></nav>
+    <div class="foot">Semi-monthly · paid every 5th &amp; 20th<br><button class="btn ghost" data-act="backup" style="padding-left:0">Download backup</button></div>
+  </aside>
+  <main id="app"><div class="empty"><b>Loading payroll…</b><span>Connecting to your payroll records.</span></div></main>
+</div>
+<div id="modal-root"></div>
+
+<script>
+/*CALC-START*/
+const DEFAULT_SETTINGS = {
+  companies: [
+    { id: "clinic", name: "Clover Life Healthcare Diagnostic Clinic", short: "Clinic" },
+    { id: "ent", name: "Clover Life Healthcare Enterprises", short: "Enterprises" }
+  ],
+  daysFactor: 313,          // working days per year used to get the daily rate (313 = 6-day week, 261 = 5-day week)
+  hoursPerDay: 8,
+  contribTiming: "split",   // split = half each pay day; A = all on 20th pay; B = all on 5th pay
+  sssEE: 0.05, sssER: 0.10, mscMin: 5000, mscMax: 35000, ecLow: 10, ecHigh: 30, ecThreshold: 15000,
+  phRate: 0.05, phFloor: 10000, phCeil: 100000,
+  piRate: 0.02, piLowRate: 0.01, piLowLimit: 1500, piCap: 10000,
+  thirteenthExempt: 90000,
+  mult: { otReg: 1.25, rdSh: 1.30, rdShOt: 1.69, rh: 1.00, rhOt: 2.60, nd: 0.10 }
+};
+const r2 = n => Math.round((Number(n) || 0) * 100 + Number.EPSILON * 100) / 100;
+const num = v => { const n = parseFloat(v); return isFinite(n) ? n : 0; };
+
+// BIR withholding tax, semi-monthly (TRAIN, 2023 onwards)
+const TAX_SEMI = [
+  [0, 0, 0], [10417, 0, 0.15], [16667, 937.50, 0.20], [33333, 4270.70, 0.25], [83333, 16770.70, 0.30], [333333, 91770.70, 0.35]
+];
+function withholdingSemi(taxable) {
+  if (taxable <= 10417) return 0;
+  let row = TAX_SEMI[0];
+  for (const t of TAX_SEMI) if (taxable > t[0]) row = t;
+  return r2(row[1] + (taxable - row[0]) * row[2]);
+}
+function sssMSC(comp, S) {
+  const msc = Math.round(comp / 500) * 500;
+  return Math.min(S.mscMax, Math.max(S.mscMin, msc));
+}
+// Monthly contributions on a monthly salary
+function monthlyContrib(monthly, S) {
+  const msc = sssMSC(monthly, S);
+  const ph = Math.min(S.phCeil, Math.max(S.phFloor, monthly)) * S.phRate / 2;
+  const piBase = Math.min(S.piCap, monthly);
+  const piEE = piBase * (monthly <= S.piLowLimit ? S.piLowRate : S.piRate);
+  const piER = piBase * S.piRate;
+  return {
+    msc,
+    sssEE: r2(msc * S.sssEE), sssER: r2(msc * S.sssER), ec: msc < S.ecThreshold ? S.ecLow : S.ecHigh,
+    phEE: r2(ph), phER: r2(ph), piEE: r2(piEE), piER: r2(piER)
+  };
+}
+function contribShare(kind, S) {
+  if (S.contribTiming === "split") return 0.5;
+  return S.contribTiming === kind ? 1 : 0;
+}
+/*
+ emp: {monthlyRate, allowance, mwe, noGov}
+ inp: {absentDays, lateMins, otReg, rdSh, rdShOt, rh, rhOt, nd, otherEarn, allowance, otherDed, skipLoans}
+ ctx: {kind:'A'|'B', include13, prior13Basic, prior13Paid, loans:[{id,label,perCutoff,balance}]}
+*/
+function computeLine(emp, inp, ctx, S) {
+  inp = inp || {};
+  const m = num(emp.monthlyRate);
+  const daily = m * 12 / S.daysFactor, hourly = daily / S.hoursPerDay, minute = hourly / 60;
+  const basic = r2(m / 2);
+  const absent = r2(num(inp.absentDays) * daily);
+  const late = r2(num(inp.lateMins) * minute);
+  const basicEarned = r2(Math.max(0, basic - absent - late));
+  const M = S.mult;
+  const prem = {
+    otReg: r2(num(inp.otReg) * hourly * M.otReg),
+    rdSh: r2(num(inp.rdSh) * hourly * M.rdSh),
+    rdShOt: r2(num(inp.rdShOt) * hourly * M.rdShOt),
+    rh: r2(num(inp.rh) * hourly * M.rh),
+    rhOt: r2(num(inp.rhOt) * hourly * M.rhOt),
+    nd: r2(num(inp.nd) * hourly * M.nd)
+  };
+  const premTotal = r2(Object.values(prem).reduce((a, b) => a + b, 0));
+  const otherEarn = r2(num(inp.otherEarn));
+  const allowance = r2(inp.allowance !== undefined && inp.allowance !== "" ? num(inp.allowance) : num(emp.allowance));
+  // 13th month
+  let thirteenth = 0, thirteenthTaxable = 0;
+  if (ctx.include13) {
+    const total13 = r2((num(ctx.prior13Basic) + basicEarned) / 12);
+    thirteenth = r2(Math.max(0, total13 - num(ctx.prior13Paid)));
+    const before = num(ctx.prior13Paid), after = before + thirteenth;
+    thirteenthTaxable = r2(Math.max(0, after - S.thirteenthExempt) - Math.max(0, before - S.thirteenthExempt));
+  }
+  const gross = r2(basicEarned + premTotal + otherEarn + allowance + thirteenth);
+  // government contributions
+  const f = emp.noGov ? 0 : contribShare(ctx.kind, S);
+  const mc = monthlyContrib(m, S);
+  const gov = {
+    msc: mc.msc,
+    sssEE: r2(mc.sssEE * f), sssER: r2(mc.sssER * f), ec: r2(mc.ec * f),
+    phEE: r2(mc.phEE * f), phER: r2(mc.phER * f),
+    piEE: r2(mc.piEE * f), piER: r2(mc.piER * f)
+  };
+  const eeTotal = r2(gov.sssEE + gov.phEE + gov.piEE);
+  const taxable = r2(Math.max(0, basicEarned + premTotal + otherEarn + thirteenthTaxable - eeTotal));
+  const tax = emp.mwe ? 0 : withholdingSemi(taxable);
+  // loans
+  const loans = {};
+  let loanTotal = 0;
+  if (!inp.skipLoans) for (const l of (ctx.loans || [])) {
+    const d = r2(Math.min(num(l.perCutoff), Math.max(0, num(l.balance))));
+    if (d > 0) { loans[l.id] = d; loanTotal = r2(loanTotal + d); }
+  }
+  const otherDed = r2(num(inp.otherDed));
+  const deductions = r2(eeTotal + tax + loanTotal + otherDed);
+  const net = r2(gross - deductions);
+  return { monthlyRate: m, daily: r2(daily), hourly: r2(hourly), basic, absent, late, basicEarned, prem, premTotal,
+    otherEarn, allowance, thirteenth, thirteenthTaxable, gross, gov, eeTotal, taxable, tax, loans, loanTotal, otherDed, deductions, net };
+}
+function pad2(n) { return String(n).padStart(2, "0"); }
+function lastDay(y, m) { return new Date(y, m, 0).getDate(); } // m 1-12
+// kind A = paid on the 20th for the 1st-15th; kind B = paid on the 5th for the 16th-end of the previous month
+function periodFor(y, m, kind) {
+  if (kind === "A") return { payDate: `${y}-${pad2(m)}-20`, start: `${y}-${pad2(m)}-01`, end: `${y}-${pad2(m)}-15` };
+  let py = y, pm = m - 1; if (pm === 0) { pm = 12; py--; }
+  return { payDate: `${y}-${pad2(m)}-05`, start: `${py}-${pad2(pm)}-16`, end: `${py}-${pad2(pm)}-${pad2(lastDay(py, pm))}` };
+}
+function nextPayDay(today) {
+  const y = today.getFullYear(), m = today.getMonth() + 1, d = today.getDate();
+  if (d <= 5) return { y, m, kind: "B" };
+  if (d <= 20) return { y, m, kind: "A" };
+  return m === 12 ? { y: y + 1, m: 1, kind: "B" } : { y, m: m + 1, kind: "B" };
+}
+/*CALC-END*/
+
+// ---------- state ----------
+const st = {
+  tab: "overview", settings: null, employees: [], loans: [], runs: [],
+  openRun: null, readOnly: false, ready: false, empFilter: "all", empSearch: "", showInactive: false,
+  reportMonth: null, year13: new Date().getFullYear()
+};
+
+const S = () => Object.assign({}, DEFAULT_SETTINGS, st.settings || {}, { mult: Object.assign({}, DEFAULT_SETTINGS.mult, (st.settings || {}).mult || {}) });
+const companies = () => S().companies || DEFAULT_SETTINGS.companies;
+const coName = id => (companies().find(c => c.id === id) || {}).name || id;
+const coShort = id => (companies().find(c => c.id === id) || {}).short || coName(id);
+const empById = id => st.employees.find(e => e.id === id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const peso = n => "₱" + (Number(n) || 0).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const amt = n => (Number(n) || 0).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+function fdate(s) { if (!s) return ""; const [y, m, d] = s.split("-").map(Number); return `${MONTHS[m - 1]} ${d}, ${y}`; }
+function fshort(s) { if (!s) return ""; const [, m, d] = s.split("-").map(Number); return `${MONTHS[m - 1]} ${d}`; }
+const periodLabel = r => `${fshort(r.periodStart)}–${fdate(r.periodEnd)}`;
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+
+function toast(msg) {
+  const t = document.createElement("div"); t.className = "toast"; t.textContent = msg;
+  document.body.appendChild(t); setTimeout(() => t.remove(), 2600);
+}
+
+// ---------- local storage ----------
+const STORE_KEY = "cloverLifePayroll.v1";
+let store = { settings: null, employees: {}, loans: {}, runs: {} };
+let storageOK = true;
+function storageWorks() {
+  try { localStorage.setItem(STORE_KEY + ".test", "1"); const ok = localStorage.getItem(STORE_KEY + ".test") === "1"; localStorage.removeItem(STORE_KEY + ".test"); return ok; } catch (e) { return false; }
+}
+const isPreview = location.protocol !== "file:" && !/^https?:$/.test(location.protocol) || window.self !== window.top;
+function loadStore() {
+  storageOK = storageWorks();
+  try { const raw = localStorage.getItem(STORE_KEY); if (raw) store = Object.assign({ settings: null, employees: {}, loans: {}, runs: {} }, JSON.parse(raw)); }
+  catch (e) { storageOK = false; }
+}
+function saveStore() {
+  store.savedAt = new Date().toISOString();
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(store)); }
+  catch (e) { storageOK = false; toast("Couldn't save in this browser. Download a backup now."); }
+}
+const clone = o => JSON.parse(JSON.stringify(o));
+function syncState() {
+  st.settings = store.settings ? clone(store.settings) : null;
+  st.employees = Object.entries(store.employees).map(([id, d]) => Object.assign({ id }, clone(d)));
+  st.loans = Object.entries(store.loans).map(([id, d]) => Object.assign({ id }, clone(d)));
+  const open = {}; st.runs.forEach(r => open[r.id] = r);
+  st.runs = Object.entries(store.runs).map(([id, d]) => Object.assign({ id }, clone(d)));
+}
+function writeLocal(path, data) {
+  const [col, id] = path.split("/");
+  if (col === "settings") store.settings = data ? clone(data) : null;
+  else if (data === null) delete store[col][id];
+  else store[col][id] = clone(data);
+  saveStore(); syncState(); render();
+  return Promise.resolve();
+}
+const setDoc = (path, data) => writeLocal(path, data);
+const delDoc = path => writeLocal(path, null);
+
+// ---------- derived ----------
+function finalizedRuns() { return st.runs.filter(r => r.status === "final"); }
+function loanPaid(loanId, excludeRunId) {
+  let t = 0;
+  for (const r of finalizedRuns()) {
+    if (r.id === excludeRunId) continue;
+    for (const res of Object.values(r.results || {})) t += num((res.loans || {})[loanId]);
+  }
+  return r2(t + loans_manual(loanId));
+}
+function loans_manual(loanId) { const l = st.loans.find(x => x.id === loanId); return l ? num(l.paidBefore) : 0; }
+function loanBalance(l, excludeRunId) { return r2(num(l.principal) - loanPaid(l.id, excludeRunId)); }
+function runEmployees(run) {
+  if (run.status === "final") return Object.keys(run.results || {});
+  return st.employees.filter(e => e.status !== "inactive" && (run.company === "all" || e.company === run.company))
+    .sort((a, b) => (a.name || "").localeCompare(b.name || "")).map(e => e.id);
+}
+function prior13(empId, year, excludeRunId) {
+  let basic = 0, paid = 0;
+  for (const r of finalizedRuns()) {
+    if (r.id === excludeRunId) continue;
+    if (!r.periodEnd || r.periodEnd.slice(0, 4) !== String(year)) continue;
+    const res = (r.results || {})[empId]; if (!res) continue;
+    basic += num(res.basicEarned); paid += num(res.thirteenth);
+  }
+  return { basic: r2(basic), paid: r2(paid) };
+}
+function lineFor(run, empId) {
+  if (run.status === "final") return (run.results || {})[empId];
+  const emp = empById(empId); if (!emp) return null;
+  const year = (run.periodEnd || run.payDate).slice(0, 4);
+  const p = prior13(empId, year, run.id);
+  const loans = st.loans.filter(l => l.employeeId === empId && l.status !== "closed")
+    .map(l => ({ id: l.id, label: l.type, perCutoff: l.perCutoff, balance: loanBalance(l, run.id) }));
+  const res = computeLine(emp, (run.lines || {})[empId], { kind: run.kind, include13: !!run.include13, prior13Basic: p.basic, prior13Paid: p.paid, loans }, S());
+  res.emp = { name: emp.name, code: emp.code, position: emp.position, company: emp.company, tin: emp.tin, sss: emp.sss, philhealth: emp.philhealth, pagibig: emp.pagibig, mwe: !!emp.mwe };
+  res.loanLabels = Object.fromEntries(loans.map(l => [l.id, l.label]));
+  res.loanBalAfter = Object.fromEntries(loans.map(l => [l.id, r2(l.balance - num(res.loans[l.id]))]));
+  return res;
+}
+function runTotals(run) {
+  const t = { gross: 0, net: 0, ee: 0, tax: 0, loans: 0, er: 0, count: 0 };
+  for (const id of runEmployees(run)) {
+    const l = lineFor(run, id); if (!l) continue;
+    t.count++; t.gross += l.gross; t.net += l.net; t.ee += l.eeTotal; t.tax += l.tax; t.loans += l.loanTotal;
+    t.er += l.gov.sssER + l.gov.ec + l.gov.phER + l.gov.piER;
+  }
+  for (const k in t) if (k !== "count") t[k] = r2(t[k]);
+  return t;
+}
+
+// ---------- render ----------
+const TABS = [["overview", "Overview"], ["employees", "Employees"], ["runs", "Payroll runs"], ["loans", "Loans & advances"], ["thirteenth", "13th month"], ["reports", "Remittances"], ["settings", "Settings"]];
+function renderNav() {
+  document.getElementById("nav").innerHTML = TABS.map(([k, l]) => `<button data-tab="${k}" ${st.tab === k ? 'aria-current="page"' : ""}>${l}</button>`).join("");
+}
+let pendingRender = false, pendingRestore = null;
+function render(force) {
+  renderNav();
+  const app = document.getElementById("app");
+  const ae = document.activeElement;
+  if (!force && ae && app.contains(ae) && (ae.tagName === "INPUT" || ae.tagName === "SELECT" || ae.tagName === "TEXTAREA")) { pendingRender = true; return; }
+  pendingRender = false;
+  if (!st.ready) return;
+  const v = { overview: vOverview, employees: vEmployees, runs: vRuns, loans: vLoans, thirteenth: v13, reports: vReports, settings: vSettings }[st.tab];
+  const banner = !storageOK || isPreview
+    ? `<div class="note warn"><b>Not saving.</b> ${isPreview ? "You're viewing a preview, which forgets everything when closed." : "This browser window is blocking saved data (Incognito, or site data turned off)."} Download the file, then open it by double-clicking it from your Documents folder in a normal Chrome window.</div>`
+    : `<div class="sub" style="text-align:right">✓ Saved in this browser${store.savedAt ? " · last change " + new Date(store.savedAt).toLocaleString("en-PH", { dateStyle: "medium", timeStyle: "short" }) : ""}</div>`;
+  app.innerHTML = banner + (st.readOnly ? `<div class="note warn">You have view-only access. Ask the owner for Editor access to make changes.</div>` : "") + v();
+}
+document.addEventListener("focusout", () => setTimeout(() => { if (pendingRender) render(); }, 0));
+
+function vOverview() {
+  const today = new Date(); const np = nextPayDay(today); const per = periodFor(np.y, np.m, np.kind);
+  const active = st.employees.filter(e => e.status !== "inactive");
+  const byCo = companies().map(c => { const list = active.filter(e => e.company === c.id); return { c, n: list.length, monthly: r2(list.reduce((a, e) => a + num(e.monthlyRate), 0)) }; });
+  const existing = st.runs.find(r => r.payDate === per.payDate);
+  const openLoans = st.loans.filter(l => l.status !== "closed");
+  const loanOut = r2(openLoans.reduce((a, l) => a + Math.max(0, loanBalance(l)), 0));
+  const recent = [...st.runs].sort((a, b) => (b.payDate || "").localeCompare(a.payDate || "")).slice(0, 6);
+  return `
+  <div class="head"><div><div class="eyebrow">Next pay day</div><h1>${fdate(per.payDate)}</h1><p>Covers ${fshort(per.start)}–${fdate(per.end)}</p></div>
+    <div class="row">${existing ? `<button class="btn primary" data-open-run="${existing.id}">Open ${existing.status === "final" ? "finalized" : "draft"} run</button>` : `<button class="btn primary" data-act="new-run" data-y="${np.y}" data-m="${np.m}" data-kind="${np.kind}" ${st.readOnly ? "disabled" : ""}>Start this payroll</button>`}</div></div>
+  <div class="stats">
+    ${byCo.map(x => `<div class="stat"><span class="eyebrow">${esc(x.c.short || x.c.name)}</span><span class="v">${x.n}</span><span class="s">active employees · ${peso(x.monthly)} monthly basic</span></div>`).join("")}
+    <div class="stat"><span class="eyebrow">Loans & advances</span><span class="v">${peso(loanOut)}</span><span class="s">outstanding across ${openLoans.length} open ${openLoans.length === 1 ? "loan" : "loans"}</span></div>
+  </div>
+  <div class="panel"><div class="ph"><h3>Recent payroll runs</h3><button class="btn ghost" data-tab="runs">All runs</button></div>
+  ${recent.length ? `<div class="tw"><table><thead><tr><th>Pay date</th><th>Period</th><th>Company</th><th>Status</th><th class="r">Employees</th><th class="r">Gross</th><th class="r">Net pay</th></tr></thead><tbody>
+    ${recent.map(r => { const t = runTotals(r); return `<tr class="click" data-open-run="${r.id}"><td>${fdate(r.payDate)}</td><td>${periodLabel(r)}</td><td>${r.company === "all" ? "Both" : esc(coShort(r.company))}</td><td>${statusPill(r)}</td><td class="r num">${t.count}</td><td class="r num">${amt(t.gross)}</td><td class="r num">${amt(t.net)}</td></tr>`; }).join("")}
+  </tbody></table></div>` : `<div class="empty"><b>No payroll runs yet</b><span>${st.employees.length ? "Start the next payroll above to compute pay for everyone." : "Add your employees first, then start a payroll run."}</span>${st.employees.length ? "" : `<button class="btn primary" data-act="new-emp" ${st.readOnly ? "disabled" : ""}>Add employee</button>`}</div>`}
+  </div>
+  ${storageOK ? "" : `<div class="note warn">This browser is blocking saved data, so changes will be lost when you close the page. Open the file in Chrome or Edge directly from your computer.</div>`}
+  <div class="note">Pay schedule: the <b>20th</b> pays the 1st–15th of the same month; the <b>5th</b> pays the 16th–end of the previous month. Deductions use the 2026 SSS, PhilHealth and Pag-IBIG schedules and the BIR semi-monthly withholding table; you can adjust rates under Settings.</div>`;
+}
+const statusPill = r => r.status === "final" ? `<span class="pill good">Finalized</span>` : `<span class="pill warn">Draft</span>`;
+
+function vEmployees() {
+  const q = st.empSearch.toLowerCase();
+  const list = st.employees.filter(e => (st.empFilter === "all" || e.company === st.empFilter) && (st.showInactive || e.status !== "inactive") && (!q || (e.name + " " + (e.code || "") + " " + (e.position || "")).toLowerCase().includes(q)))
+    .sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+  return `<div class="head"><div><h1>Employees</h1><p>${st.employees.filter(e => e.status !== "inactive").length} active across both companies</p></div>
+    <button class="btn primary" data-act="new-emp" ${st.readOnly ? "disabled" : ""}>Add employee</button></div>
+  <div class="row">
+    <select id="emp-filter" style="width:auto"><option value="all">Both companies</option>${companies().map(c => `<option value="${c.id}" ${st.empFilter === c.id ? "selected" : ""}>${esc(c.short || c.name)}</option>`).join("")}</select>
+    <input id="emp-search" placeholder="Search name, ID or position" value="${esc(st.empSearch)}" style="max-width:280px">
+    <label class="chk"><input type="checkbox" id="emp-inactive" ${st.showInactive ? "checked" : ""}> Show inactive</label>
+  </div>
+  <div class="panel">${list.length ? `<div class="tw"><table><thead><tr><th>Employee</th><th>Company</th><th>Position</th><th class="r">Monthly rate</th><th class="r">Daily rate</th><th>Gov't IDs</th><th>Status</th></tr></thead><tbody>
+  ${list.map(e => { const d = r2(num(e.monthlyRate) * 12 / S().daysFactor); const ids = ["sss", "philhealth", "pagibig", "tin"].filter(k => e[k]).length;
+    return `<tr class="click" data-edit-emp="${e.id}"><td><b>${esc(e.name)}</b><div class="sub mono">${esc(e.code || "")}</div></td><td>${esc(coShort(e.company))}</td><td>${esc(e.position || "")}</td><td class="r num">${amt(e.monthlyRate)}</td><td class="r num">${amt(d)}</td><td>${ids === 4 ? `<span class="pill good">Complete</span>` : `<span class="pill warn">${ids}/4</span>`}</td><td>${e.status === "inactive" ? `<span class="pill">Inactive</span>` : `<span class="pill acc">Active</span>`}${e.mwe ? ` <span class="pill">MWE</span>` : ""}</td></tr>`; }).join("")}
+  </tbody></table></div>` : `<div class="empty"><b>${st.employees.length ? "No employees match" : "No employees yet"}</b><span>${st.employees.length ? "Try a different company or search." : "Add each employee with their company, monthly rate and government numbers."}</span></div>`}</div>`;
+}
+
+function vRuns() {
+  if (st.openRun) { const r = st.runs.find(x => x.id === st.openRun); if (r) return vRunDetail(r); st.openRun = null; }
+  const runs = [...st.runs].sort((a, b) => (b.payDate || "").localeCompare(a.payDate || ""));
+  const np = nextPayDay(new Date());
+  return `<div class="head"><div><h1>Payroll runs</h1><p>One run per pay day. Enter attendance, review, then finalize.</p></div>
+    <button class="btn primary" data-act="new-run" data-y="${np.y}" data-m="${np.m}" data-kind="${np.kind}" ${st.readOnly ? "disabled" : ""}>New payroll run</button></div>
+  <div class="panel">${runs.length ? `<div class="tw"><table><thead><tr><th>Pay date</th><th>Period</th><th>Company</th><th>Status</th><th class="r">Employees</th><th class="r">Gross</th><th class="r">Deductions</th><th class="r">Net pay</th></tr></thead><tbody>
+  ${runs.map(r => { const t = runTotals(r); return `<tr class="click" data-open-run="${r.id}"><td><b>${fdate(r.payDate)}</b>${r.include13 ? ` <span class="pill acc">+13th</span>` : ""}</td><td>${periodLabel(r)}</td><td>${r.company === "all" ? "Both" : esc(coShort(r.company))}</td><td>${statusPill(r)}</td><td class="r num">${t.count}</td><td class="r num">${amt(t.gross)}</td><td class="r num">${amt(r2(t.gross - t.net))}</td><td class="r num"><b>${amt(t.net)}</b></td></tr>`; }).join("")}
+  </tbody></table></div>` : `<div class="empty"><b>No payroll runs yet</b><span>Create a run for a pay day (5th or 20th). Every active employee is included automatically.</span></div>`}</div>`;
+}
+
+function vRunDetail(run) {
+  const ids = runEmployees(run); const fin = run.status === "final"; const ro = fin || st.readOnly;
+  const t = runTotals(run);
+  const cell = (empId, k, step) => `<input class="cell" inputmode="decimal" data-line="${empId}" data-k="${k}" value="${esc(((run.lines || {})[empId] || {})[k] ?? "")}" placeholder="0" ${ro ? "disabled" : ""} aria-label="${k}">`;
+  const rows = ids.map(id => {
+    const l = lineFor(run, id); if (!l) return "";
+    const e = l.emp || {}; const inp = (run.lines || {})[id] || {};
+    const extras = ["rdSh", "rdShOt", "rh", "rhOt", "nd", "otherEarn", "otherDed"].filter(k => num(inp[k])).length + (inp.skipLoans ? 1 : 0);
+    return `<tr><td><b>${esc(e.name)}</b><div class="sub">${esc(e.position || "")} · ${esc(coShort(e.company))}</div></td>
+      <td class="r num">${amt(l.basic)}</td>
+      <td class="r">${fin ? `<span class="num">${num(inp.absentDays) || "–"}</span>` : cell(id, "absentDays")}</td>
+      <td class="r">${fin ? `<span class="num">${num(inp.lateMins) || "–"}</span>` : cell(id, "lateMins")}</td>
+      <td class="r">${fin ? `<span class="num">${num(inp.otReg) || "–"}</span>` : cell(id, "otReg")}</td>
+      <td><button class="btn ghost" data-more="${id}">${fin ? "Details" : "More"}${extras ? ` (${extras})` : ""}</button></td>
+      <td class="r num">${amt(l.gross)}</td><td class="r num">${amt(l.eeTotal)}</td><td class="r num">${amt(l.tax)}</td><td class="r num">${amt(r2(l.loanTotal + l.otherDed))}</td>
+      <td class="r num"><b>${amt(l.net)}</b></td><td><button class="btn ghost" data-slip="${id}">Payslip</button></td></tr>`;
+  }).join("");
+  return `<div class="head"><div><button class="btn ghost" data-act="back-runs" style="padding-left:0">← All runs</button>
+    <div class="eyebrow">${run.company === "all" ? "Both companies" : esc(coName(run.company))}</div>
+    <h1>Pay day ${fdate(run.payDate)} ${statusPill(run)}</h1><p>Period ${periodLabel(run)} · ${run.kind === "A" ? "1st cut-off" : "2nd cut-off"}</p></div>
+    <div class="row">
+      ${fin ? `<button class="btn primary" data-act="print-slips">Print payslips</button><button class="btn" data-act="dl-slips">Download payslips</button><button class="btn" data-act="dl-register">Download register (CSV)</button>${st.readOnly ? "" : `<button class="btn" data-act="reopen">Reopen</button>`}`
+            : `<label class="chk"><input type="checkbox" id="run-13" ${run.include13 ? "checked" : ""} ${ro ? "disabled" : ""}> Include 13th month pay</label>
+               <button class="btn danger" data-act="del-run" ${ro ? "disabled" : ""}>Delete draft</button>
+               <button class="btn primary" data-act="finalize" ${ro || !ids.length ? "disabled" : ""}>Finalize payroll</button>`}
+    </div></div>
+  <div class="stats">
+    <div class="stat"><span class="eyebrow">Gross pay</span><span class="v">${peso(t.gross)}</span><span class="s">${t.count} employees</span></div>
+    <div class="stat"><span class="eyebrow">Employee contributions</span><span class="v">${peso(t.ee)}</span><span class="s">SSS, PhilHealth, Pag-IBIG</span></div>
+    <div class="stat"><span class="eyebrow">Withholding tax</span><span class="v">${peso(t.tax)}</span><span class="s">BIR semi-monthly table</span></div>
+    <div class="stat"><span class="eyebrow">Net pay to release</span><span class="v">${peso(t.net)}</span><span class="s">Employer share ${peso(t.er)}</span></div>
+  </div>
+  ${fin ? "" : `<div class="note">Type absences in days (0.5 for half day), late and undertime in minutes, and regular overtime in hours. Use <b>More</b> for rest-day, holiday, night-differential, adjustments and other deductions. Monthly-paid staff already receive pay for unworked regular holidays.</div>`}
+  <div class="panel">${ids.length ? `<div class="tw"><table><thead><tr><th>Employee</th><th class="r">Basic</th><th class="r">Absent (days)</th><th class="r">Late/UT (min)</th><th class="r">OT (hrs)</th><th></th><th class="r">Gross</th><th class="r">Contrib.</th><th class="r">Tax</th><th class="r">Loans/Other</th><th class="r">Net pay</th><th></th></tr></thead>
+    <tbody>${rows}</tbody><tfoot><tr><td>Total</td><td></td><td></td><td></td><td></td><td></td><td class="r num">${amt(t.gross)}</td><td class="r num">${amt(t.ee)}</td><td class="r num">${amt(t.tax)}</td><td class="r num">${amt(r2(t.gross - t.net - t.ee - t.tax))}</td><td class="r num">${amt(t.net)}</td><td></td></tr></tfoot></table></div>`
+    : `<div class="empty"><b>No active employees for this company</b><span>Add employees, or mark them active, to include them in this run.</span></div>`}</div>`;
+}
+
+function vLoans() {
+  const list = [...st.loans].sort((a, b) => (a.status === "closed") - (b.status === "closed") || (b.startDate || "").localeCompare(a.startDate || ""));
+  return `<div class="head"><div><h1>Loans & advances</h1><p>Cash advances and SSS / Pag-IBIG salary loans deducted every pay day until paid.</p></div>
+    <button class="btn primary" data-act="new-loan" ${st.readOnly || !st.employees.length ? "disabled" : ""}>Add loan</button></div>
+  <div class="panel">${list.length ? `<div class="tw"><table><thead><tr><th>Employee</th><th>Type</th><th>Start</th><th class="r">Amount</th><th class="r">Per pay day</th><th class="r">Paid</th><th class="r">Balance</th><th>Status</th></tr></thead><tbody>
+  ${list.map(l => { const e = empById(l.employeeId) || {}; const bal = loanBalance(l); const paid = r2(num(l.principal) - bal);
+    const s = l.status === "closed" ? `<span class="pill">Closed</span>` : bal <= 0 ? `<span class="pill good">Fully paid</span>` : `<span class="pill acc">Deducting</span>`;
+    return `<tr class="click" data-edit-loan="${l.id}"><td><b>${esc(e.name || "Removed employee")}</b><div class="sub">${esc(coShort(e.company))}</div></td><td>${esc(l.type)}${l.note ? `<div class="sub">${esc(l.note)}</div>` : ""}</td><td>${fdate(l.startDate)}</td><td class="r num">${amt(l.principal)}</td><td class="r num">${amt(l.perCutoff)}</td><td class="r num">${amt(paid)}</td><td class="r num"><b>${amt(Math.max(0, bal))}</b></td><td>${s}</td></tr>`; }).join("")}
+  </tbody></table></div>` : `<div class="empty"><b>No loans or advances</b><span>${st.employees.length ? "Add one and it will be deducted automatically from each payroll run." : "Add employees first."}</span></div>`}</div>`;
+}
+
+function v13() {
+  const y = st.year13; const years = new Set([new Date().getFullYear()]); finalizedRuns().forEach(r => r.periodEnd && years.add(+r.periodEnd.slice(0, 4)));
+  const rows = st.employees.map(e => { const p = prior13(e.id, y); return { e, ...p, due: r2(p.basic / 12) }; }).filter(x => x.basic > 0 || x.e.status !== "inactive")
+    .sort((a, b) => (a.e.name || "").localeCompare(b.e.name || ""));
+  const tot = rows.reduce((a, x) => ({ basic: a.basic + x.basic, due: a.due + x.due, paid: a.paid + x.paid }), { basic: 0, due: 0, paid: 0 });
+  return `<div class="head"><div><h1>13th month pay</h1><p>Basic salary actually earned in ${y} (after absences and lates) ÷ 12, from finalized runs. Due on or before December 24.</p></div>
+    <div class="row"><select id="year13" style="width:auto">${[...years].sort().map(v => `<option ${v === y ? "selected" : ""}>${v}</option>`).join("")}</select><button class="btn" data-act="dl-13">Download (CSV)</button></div></div>
+  <div class="note">To pay it, open a payroll run (usually the December 20 pay day) and tick <b>Include 13th month pay</b>. The amount up to ₱90,000 is tax-exempt; any excess is taxed automatically.</div>
+  <div class="panel">${rows.length ? `<div class="tw"><table><thead><tr><th>Employee</th><th>Company</th><th class="r">Basic earned ${y}</th><th class="r">13th month to date</th><th class="r">Already paid</th><th class="r">Remaining</th></tr></thead><tbody>
+  ${rows.map(x => `<tr><td><b>${esc(x.e.name)}</b></td><td>${esc(coShort(x.e.company))}</td><td class="r num">${amt(x.basic)}</td><td class="r num">${amt(x.due)}</td><td class="r num">${amt(x.paid)}</td><td class="r num"><b>${amt(Math.max(0, x.due - x.paid))}</b></td></tr>`).join("")}
+  </tbody><tfoot><tr><td>Total</td><td></td><td class="r num">${amt(tot.basic)}</td><td class="r num">${amt(tot.due)}</td><td class="r num">${amt(tot.paid)}</td><td class="r num">${amt(Math.max(0, tot.due - tot.paid))}</td></tr></tfoot></table></div>` : `<div class="empty"><b>Nothing accrued yet</b><span>13th month builds up as you finalize payroll runs.</span></div>`}</div>`;
+}
+
+function remitData(month) {
+  const runs = finalizedRuns().filter(r => (r.periodEnd || "").slice(0, 7) === month);
+  const per = {};
+  for (const r of runs) for (const [id, l] of Object.entries(r.results || {})) {
+    const e = l.emp || {}; const k = id;
+    const p = per[k] || (per[k] = { name: e.name, company: e.company, sss: e.sss, philhealth: e.philhealth, pagibig: e.pagibig, tin: e.tin, gross: 0, sssEE: 0, sssER: 0, ec: 0, phEE: 0, phER: 0, piEE: 0, piER: 0, tax: 0 });
+    p.gross += l.gross; p.tax += l.tax; for (const g of ["sssEE", "sssER", "ec", "phEE", "phER", "piEE", "piER"]) p[g] += l.gov[g];
+  }
+  const list = Object.values(per).map(p => { for (const k in p) if (typeof p[k] === "number") p[k] = r2(p[k]); return p; });
+  return { runs, list };
+}
+function vReports() {
+  const months = [...new Set(finalizedRuns().map(r => (r.periodEnd || "").slice(0, 7)).filter(Boolean))].sort().reverse();
+  if (!st.reportMonth || !months.includes(st.reportMonth)) st.reportMonth = months[0] || null;
+  if (!st.reportMonth) return `<div class="head"><div><h1>Remittances</h1><p>Monthly totals to pay SSS, PhilHealth, Pag-IBIG and BIR.</p></div></div><div class="panel"><div class="empty"><b>No finalized payroll yet</b><span>Totals appear here once you finalize a payroll run.</span></div></div>`;
+  const { runs, list } = remitData(st.reportMonth);
+  const [yy, mm] = st.reportMonth.split("-").map(Number);
+  const cos = companies().map(c => ({ c, rows: list.filter(p => p.company === c.id) })).filter(x => x.rows.length);
+  const sum = (rows, k) => r2(rows.reduce((a, p) => a + p[k], 0));
+  const missing = 2 - runs.filter(r => r.company === "all").length;
+  return `<div class="head"><div><h1>Remittances</h1><p>Contributions for work in ${MONTHS[mm - 1]} ${yy} (both cut-offs: paid ${MONTHS[mm - 1]} 20 and the following 5th).</p></div>
+    <div class="row"><select id="rep-month" style="width:auto">${months.map(m => { const [a, b] = m.split("-").map(Number); return `<option value="${m}" ${m === st.reportMonth ? "selected" : ""}>${MONTHS[b - 1]} ${a}</option>`; }).join("")}</select><button class="btn" data-act="dl-remit">Download (CSV)</button></div></div>
+  ${runs.length < 2 ? `<div class="note warn">Only ${runs.length} finalized run${runs.length === 1 ? "" : "s"} for this month so far. Totals will be complete after both cut-offs are finalized.</div>` : ""}
+  ${cos.map(({ c, rows }) => `<div class="panel"><div class="ph"><h3>${esc(c.name)}</h3><span class="sub">${rows.length} employees</span></div>
+    <div class="pb stats" style="padding-bottom:0">
+      <div class="stat"><span class="eyebrow">SSS</span><span class="v">${peso(sum(rows, "sssEE") + sum(rows, "sssER") + sum(rows, "ec"))}</span><span class="s">EE ${amt(sum(rows, "sssEE"))} · ER ${amt(sum(rows, "sssER"))} · EC ${amt(sum(rows, "ec"))}</span></div>
+      <div class="stat"><span class="eyebrow">PhilHealth</span><span class="v">${peso(sum(rows, "phEE") + sum(rows, "phER"))}</span><span class="s">EE ${amt(sum(rows, "phEE"))} · ER ${amt(sum(rows, "phER"))}</span></div>
+      <div class="stat"><span class="eyebrow">Pag-IBIG</span><span class="v">${peso(sum(rows, "piEE") + sum(rows, "piER"))}</span><span class="s">EE ${amt(sum(rows, "piEE"))} · ER ${amt(sum(rows, "piER"))}</span></div>
+      <div class="stat"><span class="eyebrow">BIR withholding (1601-C)</span><span class="v">${peso(sum(rows, "tax"))}</span><span class="s">Tax withheld on compensation</span></div>
+    </div>
+    <div class="pb"><div class="tw"><table><thead><tr><th>Employee</th><th>SSS no.</th><th class="r">SSS EE</th><th class="r">SSS ER+EC</th><th>PhilHealth no.</th><th class="r">PH EE</th><th class="r">PH ER</th><th>Pag-IBIG no.</th><th class="r">PI EE</th><th class="r">PI ER</th><th>TIN</th><th class="r">Tax</th></tr></thead><tbody>
+    ${rows.map(p => `<tr><td>${esc(p.name)}</td><td class="mono">${esc(p.sss || "—")}</td><td class="r num">${amt(p.sssEE)}</td><td class="r num">${amt(p.sssER + p.ec)}</td><td class="mono">${esc(p.philhealth || "—")}</td><td class="r num">${amt(p.phEE)}</td><td class="r num">${amt(p.phER)}</td><td class="mono">${esc(p.pagibig || "—")}</td><td class="r num">${amt(p.piEE)}</td><td class="r num">${amt(p.piER)}</td><td class="mono">${esc(p.tin || "—")}</td><td class="r num">${amt(p.tax)}</td></tr>`).join("")}
+    </tbody></table></div></div></div>`).join("")}`;
+}
+
+function vSettings() {
+  const s = S(); const ro = st.readOnly ? "disabled" : "";
+  const f = (id, label, val, step) => `<label class="f">${label}<input id="set-${id}" type="number" step="${step || "any"}" value="${val}" ${ro}></label>`;
+  return `<div class="head"><div><h1>Settings</h1><p>Company names, how daily rates are figured, and contribution rates.</p></div><button class="btn primary" data-act="save-settings" ${ro}>Save settings</button></div>
+  <div class="panel"><div class="ph"><h3>Companies</h3></div><div class="pb grid2">
+    ${s.companies.map((c, i) => `<label class="f">Company ${i + 1} name<input id="set-co-${i}" value="${esc(c.name)}" ${ro}></label><label class="f">Short name<input id="set-cos-${i}" value="${esc(c.short || "")}" ${ro}></label>`).join("")}
+  </div></div>
+  <div class="panel"><div class="ph"><h3>Pay rules</h3></div><div class="pb grid3">
+    <label class="f">Working days per year (daily rate = monthly × 12 ÷ this)<select id="set-daysFactor" ${ro}>
+      ${[[313, "313 — 6 days a week"], [261, "261 — 5 days a week"], [365, "365 — paid every day"]].map(([v, l]) => `<option value="${v}" ${+s.daysFactor === v ? "selected" : ""}>${l}</option>`).join("")}</select></label>
+    ${f("hoursPerDay", "Hours per day", s.hoursPerDay, "0.5")}
+    <label class="f">When to deduct contributions<select id="set-contribTiming" ${ro}>
+      <option value="split" ${s.contribTiming === "split" ? "selected" : ""}>Half on the 20th, half on the 5th</option>
+      <option value="A" ${s.contribTiming === "A" ? "selected" : ""}>All on the 20th pay day</option>
+      <option value="B" ${s.contribTiming === "B" ? "selected" : ""}>All on the 5th pay day</option></select></label>
+  </div></div>
+  <div class="panel"><div class="ph"><h3>Contribution rates (2026)</h3><span class="sub">Change only when SSS, PhilHealth or Pag-IBIG issue new circulars</span></div><div class="pb grid3">
+    ${f("sssEE", "SSS employee share (5% = 0.05)", s.sssEE)}${f("sssER", "SSS employer share", s.sssER)}${f("mscMin", "SSS minimum salary credit", s.mscMin)}
+    ${f("mscMax", "SSS maximum salary credit", s.mscMax)}${f("phRate", "PhilHealth total rate (split 50/50)", s.phRate)}${f("phFloor", "PhilHealth salary floor", s.phFloor)}
+    ${f("phCeil", "PhilHealth salary ceiling", s.phCeil)}${f("piRate", "Pag-IBIG rate (each side)", s.piRate)}${f("piCap", "Pag-IBIG max fund salary", s.piCap)}
+  </div></div>
+  <div class="panel"><div class="ph"><h3>Premium pay multipliers</h3><span class="sub">Applied to the hourly rate</span></div><div class="pb grid3">
+    ${f("m-otReg", "Overtime, regular day", s.mult.otReg)}${f("m-rdSh", "Rest day / special holiday worked", s.mult.rdSh)}${f("m-rdShOt", "Rest day / special holiday OT", s.mult.rdShOt)}
+    ${f("m-rh", "Regular holiday worked (on top of monthly pay)", s.mult.rh)}${f("m-rhOt", "Regular holiday OT", s.mult.rhOt)}${f("m-nd", "Night differential (10pm–6am)", s.mult.nd)}
+  </div></div>
+  <div class="panel"><div class="ph"><h3>Backup</h3><span class="sub">Your payroll is saved only in this browser on this computer</span></div><div class="pb" style="display:flex;flex-direction:column;gap:12px">
+    <p style="margin:0">Download a backup after every payroll run and keep it in a safe folder (or Google Drive). If this browser's data is cleared, or you move to another computer, open this same file and restore the latest backup.</p>
+    <div class="row"><button class="btn primary" data-act="backup">Download backup</button><button class="btn" data-act="restore">Restore from backup…</button><input type="file" id="restore-file" accept=".json,application/json" hidden></div>
+  </div></div>
+  <div class="note">Withholding tax uses the BIR semi-monthly table (TRAIN law, 2023 onwards): nothing on taxable pay up to ₱10,417, then 15% to 35% in brackets. Minimum wage earners (tick MWE on the employee) are not taxed. Rates come from published 2026 schedules; check against SSS, PhilHealth, Pag-IBIG and BIR circulars before your first remittance.</div>`;
+}
+
+// ---------- modals ----------
+function openModal(html, wide) {
+  const root = document.getElementById("modal-root");
+  root.innerHTML = `<div class="scrim" data-scrim><div class="modal ${wide ? "wide" : ""}" role="dialog" aria-modal="true">${html}</div></div>`;
+  const first = root.querySelector("input,select,textarea,button"); if (first) first.focus();
+}
+function closeModal() { document.getElementById("modal-root").innerHTML = ""; if (pendingRender) render(); }
+const val = id => { const el = document.getElementById(id); return el ? (el.type === "checkbox" ? el.checked : el.value.trim()) : ""; };
+
+function empModal(id) {
+  const e = id ? empById(id) : { company: companies()[0].id, status: "active" };
+  const ro = st.readOnly ? "disabled" : "";
+  const inRuns = id && finalizedRuns().some(r => (r.results || {})[id]);
+  openModal(`<div class="mh"><h2>${id ? "Edit employee" : "Add employee"}</h2><button class="btn ghost" data-act="close">Close</button></div>
+  <form class="mb" id="emp-form">
+    <div class="grid2">
+      <label class="f">Full name<input id="e-name" required value="${esc(e.name)}" ${ro}></label>
+      <label class="f">Employee ID<input id="e-code" value="${esc(e.code)}" placeholder="e.g. CL-0001" ${ro}></label>
+      <label class="f">Company<select id="e-company" ${ro}>${companies().map(c => `<option value="${c.id}" ${e.company === c.id ? "selected" : ""}>${esc(c.name)}</option>`).join("")}</select></label>
+      <label class="f">Position<input id="e-position" value="${esc(e.position)}" placeholder="e.g. Medical Technologist" ${ro}></label>
+      <label class="f">Monthly basic salary (₱)<input id="e-rate" type="number" step="0.01" min="0" required value="${esc(e.monthlyRate)}" ${ro}></label>
+      <label class="f">Non-taxable allowance per pay day (₱)<input id="e-allow" type="number" step="0.01" min="0" value="${esc(e.allowance)}" placeholder="0" ${ro}></label>
+      <label class="f">Date hired<input id="e-hired" type="date" value="${esc(e.dateHired)}" ${ro}></label>
+      <label class="f">Status<select id="e-status" ${ro}><option value="active">Active</option><option value="inactive" ${e.status === "inactive" ? "selected" : ""}>Inactive (resigned / on leave)</option></select></label>
+    </div>
+    <h3>Government numbers</h3>
+    <div class="grid2">
+      <label class="f">SSS no.<input id="e-sss" value="${esc(e.sss)}" ${ro}></label>
+      <label class="f">PhilHealth no.<input id="e-ph" value="${esc(e.philhealth)}" ${ro}></label>
+      <label class="f">Pag-IBIG MID no.<input id="e-pi" value="${esc(e.pagibig)}" ${ro}></label>
+      <label class="f">TIN<input id="e-tin" value="${esc(e.tin)}" ${ro}></label>
+    </div>
+    <label class="chk"><input type="checkbox" id="e-mwe" ${e.mwe ? "checked" : ""} ${ro}> Minimum wage earner (exempt from withholding tax)</label>
+    <label class="chk"><input type="checkbox" id="e-nogov" ${e.noGov ? "checked" : ""} ${ro}> Don't deduct SSS, PhilHealth, Pag-IBIG (e.g. contractual / not covered)</label>
+    <div id="e-err" class="note warn" hidden></div>
+  </form>
+  <div class="mf"><div>${id && !st.readOnly ? `<button class="btn danger" data-act="del-emp" data-id="${id}">${inRuns ? "Mark inactive" : "Delete"}</button>` : ""}</div>
+    <div class="row"><button class="btn" data-act="close">Cancel</button><button class="btn primary" data-act="save-emp" data-id="${id || ""}" ${ro}>Save employee</button></div></div>`);
+}
+function saveEmp(id) {
+  const name = val("e-name"), rate = num(val("e-rate"));
+  const err = document.getElementById("e-err");
+  if (!name || !(rate > 0)) { err.hidden = false; err.textContent = "Enter the employee's name and a monthly salary above zero."; return; }
+  const prev = id ? empById(id) : {};
+  const doc = Object.assign({}, prev, { name, code: val("e-code"), company: val("e-company"), position: val("e-position"), monthlyRate: rate, allowance: num(val("e-allow")),
+    dateHired: val("e-hired"), status: val("e-status"), sss: val("e-sss"), philhealth: val("e-ph"), pagibig: val("e-pi"), tin: val("e-tin"), mwe: val("e-mwe"), noGov: val("e-nogov"), updatedAt: new Date().toISOString() });
+  delete doc.id;
+  const newId = id || uid();
+  setDoc("employees/" + newId, doc).then(() => toast(id ? "Employee updated" : "Employee added"));
+  closeModal();
+}
+
+function loanModal(id) {
+  const l = id ? st.loans.find(x => x.id === id) : { type: "Cash advance", startDate: new Date().toISOString().slice(0, 10), status: "open" };
+  const ro = st.readOnly ? "disabled" : "";
+  const emps = st.employees.filter(e => e.status !== "inactive" || e.id === l.employeeId).sort((a, b) => a.name.localeCompare(b.name));
+  const used = id && finalizedRuns().some(r => Object.values(r.results || {}).some(x => (x.loans || {})[id]));
+  openModal(`<div class="mh"><h2>${id ? "Edit loan" : "Add loan or advance"}</h2><button class="btn ghost" data-act="close">Close</button></div>
+  <div class="mb">
+    <div class="grid2">
+      <label class="f">Employee<select id="l-emp" ${ro}>${emps.map(e => `<option value="${e.id}" ${l.employeeId === e.id ? "selected" : ""}>${esc(e.name)} — ${esc(coShort(e.company))}</option>`).join("")}</select></label>
+      <label class="f">Type<select id="l-type" ${ro}>${["Cash advance", "SSS salary loan", "SSS calamity loan", "Pag-IBIG multi-purpose loan", "Pag-IBIG calamity loan", "Company loan", "Other"].map(t => `<option ${l.type === t ? "selected" : ""}>${t}</option>`).join("")}</select></label>
+      <label class="f">Total amount to repay (₱)<input id="l-amt" type="number" step="0.01" min="0" value="${esc(l.principal)}" ${ro}></label>
+      <label class="f">Deduct per pay day (₱)<input id="l-per" type="number" step="0.01" min="0" value="${esc(l.perCutoff)}" ${ro}></label>
+      <label class="f">Start date<input id="l-start" type="date" value="${esc(l.startDate)}" ${ro}></label>
+      <label class="f">Already paid before this system (₱)<input id="l-before" type="number" step="0.01" min="0" value="${esc(l.paidBefore)}" placeholder="0" ${ro}></label>
+    </div>
+    <label class="f">Note<input id="l-note" value="${esc(l.note)}" placeholder="e.g. loan reference no." ${ro}></label>
+    ${id ? `<label class="chk"><input type="checkbox" id="l-closed" ${l.status === "closed" ? "checked" : ""} ${ro}> Stop deducting (close this loan)</label>` : ""}
+    <div class="note">For SSS and Pag-IBIG loans, use the monthly amortization ÷ 2 when contributions are split across both pay days. Deductions stop on their own once the balance reaches zero.</div>
+    <div id="l-err" class="note warn" hidden></div>
+  </div>
+  <div class="mf"><div>${id && !st.readOnly && !used ? `<button class="btn danger" data-act="del-loan" data-id="${id}">Delete</button>` : ""}</div>
+    <div class="row"><button class="btn" data-act="close">Cancel</button><button class="btn primary" data-act="save-loan" data-id="${id || ""}" ${ro}>Save loan</button></div></div>`);
+}
+function saveLoan(id) {
+  const principal = num(val("l-amt")), per = num(val("l-per"));
+  const err = document.getElementById("l-err");
+  if (!val("l-emp") || !(principal > 0) || !(per > 0)) { err.hidden = false; err.textContent = "Choose an employee and enter the total amount and the deduction per pay day."; return; }
+  const prev = id ? st.loans.find(x => x.id === id) : {};
+  const doc = Object.assign({}, prev, { employeeId: val("l-emp"), type: val("l-type"), principal, perCutoff: per, startDate: val("l-start"), paidBefore: num(val("l-before")), note: val("l-note"), status: val("l-closed") ? "closed" : "open" });
+  delete doc.id;
+  setDoc("loans/" + (id || uid()), doc).then(() => toast("Loan saved"));
+  closeModal();
+}
+
+function newRunModal(y, m, kind) {
+  const mv = `${y}-${pad2(m)}`;
+  openModal(`<div class="mh"><h2>New payroll run</h2><button class="btn ghost" data-act="close">Close</button></div>
+  <div class="mb">
+    <div class="grid2">
+      <label class="f">Pay month<input type="month" id="r-month" value="${mv}"></label>
+      <label class="f">Pay day<select id="r-kind"><option value="B" ${kind === "B" ? "selected" : ""}>5th — for 16th to end of previous month</option><option value="A" ${kind === "A" ? "selected" : ""}>20th — for 1st to 15th</option></select></label>
+      <label class="f">Company<select id="r-co"><option value="all">Both companies</option>${companies().map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join("")}</select></label>
+    </div>
+    <div class="note" id="r-preview"></div>
+  </div>
+  <div class="mf"><span></span><div class="row"><button class="btn" data-act="close">Cancel</button><button class="btn primary" data-act="create-run">Create run</button></div></div>`);
+  updateRunPreview();
+}
+function updateRunPreview() {
+  const el = document.getElementById("r-preview"); if (!el) return;
+  const [y, m] = (val("r-month") || "").split("-").map(Number); if (!y) { el.textContent = "Choose a month."; return; }
+  const p = periodFor(y, m, val("r-kind")); const co = val("r-co");
+  const dup = st.runs.find(r => r.payDate === p.payDate && (r.company === co || r.company === "all" || co === "all"));
+  el.innerHTML = `Pay day <b>${fdate(p.payDate)}</b>, covering <b>${fshort(p.start)}–${fdate(p.end)}</b>.` + (dup ? `<br><span style="color:var(--warn)">A run for this pay day already exists. Open that run instead of creating another.</span>` : "");
+}
+function createRun() {
+  const [y, m] = (val("r-month") || "").split("-").map(Number); if (!y) return;
+  const kind = val("r-kind"), co = val("r-co"); const p = periodFor(y, m, kind);
+  const dup = st.runs.find(r => r.payDate === p.payDate && (r.company === co || r.company === "all" || co === "all"));
+  if (dup) { closeModal(); st.tab = "runs"; st.openRun = dup.id; render(true); return; }
+  const id = `${p.payDate}-${co}`;
+  const doc = { payDate: p.payDate, periodStart: p.start, periodEnd: p.end, kind, company: co, include13: m === 12 && kind === "A", status: "draft", lines: {}, createdAt: new Date().toISOString() };
+  st.runs.push(Object.assign({ id }, doc));
+  setDoc("runs/" + id, doc);
+  closeModal(); st.tab = "runs"; st.openRun = id; render(true);
+}
+
+const EXTRA_FIELDS = [["rdSh", "Rest day / special holiday worked (hrs)"], ["rdShOt", "Rest day / special holiday OT (hrs)"], ["rh", "Regular holiday worked (hrs)"], ["rhOt", "Regular holiday OT (hrs)"], ["nd", "Night differential (hrs)"], ["otherEarn", "Other taxable earnings / adjustment (₱)"], ["allowance", "Allowance this pay day (₱)"], ["otherDed", "Other deductions (₱)"]];
+function moreModal(runId, empId) {
+  const run = st.runs.find(r => r.id === runId); const inp = (run.lines || {})[empId] || {};
+  const l = lineFor(run, empId); const fin = run.status === "final" || st.readOnly;
+  const emp = l.emp || {};
+  openModal(`<div class="mh"><h2>${esc(emp.name)}</h2><button class="btn ghost" data-act="close">Close</button></div>
+  <div class="mb">
+    <div class="kv"><span>Monthly rate</span><span class="num">${peso(l.monthlyRate)}</span><span>Daily rate</span><span class="num">${peso(l.daily)}</span><span>Hourly rate</span><span class="num">${peso(l.hourly)}</span></div>
+    <div class="grid2">${EXTRA_FIELDS.map(([k, lab]) => `<label class="f">${lab}<input id="x-${k}" type="number" step="any" value="${esc(inp[k] ?? "")}" placeholder="${k === "allowance" ? esc(amt(empById(empId)?.allowance || 0)) : "0"}" ${fin ? "disabled" : ""}></label>`).join("")}</div>
+    <label class="chk"><input type="checkbox" id="x-skipLoans" ${inp.skipLoans ? "checked" : ""} ${fin ? "disabled" : ""}> Skip loan deductions this pay day</label>
+    <label class="f">Note on payslip<input id="x-note" value="${esc(inp.note ?? "")}" ${fin ? "disabled" : ""}></label>
+  </div>
+  <div class="mf"><span></span><div class="row"><button class="btn" data-act="close">${fin ? "Close" : "Cancel"}</button>${fin ? "" : `<button class="btn primary" data-act="save-more" data-run="${runId}" data-emp="${empId}">Apply</button>`}</div></div>`);
+}
+function saveMore(runId, empId) {
+  const run = st.runs.find(r => r.id === runId);
+  const cur = Object.assign({}, (run.lines || {})[empId] || {});
+  for (const [k] of EXTRA_FIELDS) { const v = val("x-" + k); if (v === "") delete cur[k]; else cur[k] = num(v); }
+  cur.skipLoans = val("x-skipLoans"); cur.note = val("x-note");
+  setLine(run, empId, cur); closeModal(); render(true);
+}
+function setLine(run, empId, data) {
+  run.lines = Object.assign({}, run.lines || {}, { [empId]: data });
+  const doc = Object.assign({}, run); delete doc.id;
+  setDoc("runs/" + run.id, doc);
+}
+
+function slipHTML(run, l, inp) {
+  const e = l.emp || {}; const s = S();
+  const row = (k, v) => v ? `<dt>${k}</dt><dd>${amt(v)}</dd>` : "";
+  const earn = [["Basic pay (½ month)", l.basic], ["Less absences", -l.absent], ["Less late / undertime", -l.late], ["Overtime", l.prem.otReg], ["Rest day / special holiday", r2(l.prem.rdSh + l.prem.rdShOt)], ["Regular holiday premium", r2(l.prem.rh + l.prem.rhOt)], ["Night differential", l.prem.nd], ["Other earnings", l.otherEarn], ["Allowance (non-taxable)", l.allowance], ["13th month pay", l.thirteenth]];
+  const ded = [["SSS", l.gov.sssEE], ["PhilHealth", l.gov.phEE], ["Pag-IBIG", l.gov.piEE], ["Withholding tax", l.tax], ...Object.entries(l.loans || {}).map(([id, v]) => [(l.loanLabels || {})[id] || "Loan", v]), ["Other deductions", l.otherDed]];
+  return { e, earn, ded, row };
+}
+function slipPreview(run, empId) {
+  const l = lineFor(run, empId); const inp = (run.lines || {})[empId] || {};
+  const { e, earn, ded, row } = slipHTML(run, l, inp);
+  const loanBal = Object.entries(l.loanBalAfter || {}).map(([id, b]) => `${esc((l.loanLabels || {})[id])}: ${amt(b)} left`).join(" · ");
+  openModal(`<div class="mh"><h2>Payslip</h2><button class="btn ghost" data-act="close">Close</button></div>
+  <div class="mb"><div class="slip">
+    <div class="row" style="justify-content:space-between;align-items:flex-start"><div><div class="eyebrow">${esc(coName(e.company))}</div><h3>${esc(e.name)}</h3><div class="sub">${esc(e.position || "")}${e.code ? " · " + esc(e.code) : ""}</div></div>
+      <div style="text-align:right"><div class="sub">Pay day</div><b>${fdate(run.payDate)}</b><div class="sub">Period ${periodLabel(run)}</div></div></div>
+    <div class="cols"><div><div class="eyebrow">Earnings</div><dl>${earn.map(([k, v]) => row(k, v)).join("")}<dt class="tot">Gross pay</dt><dd class="tot">${amt(l.gross)}</dd></dl></div>
+      <div><div class="eyebrow">Deductions</div><dl>${ded.map(([k, v]) => row(k, v)).join("") || "<dt>None</dt><dd>0.00</dd>"}<dt class="tot">Total deductions</dt><dd class="tot">${amt(l.deductions)}</dd></dl></div></div>
+    <div class="netbar"><span>Net pay</span><span class="num">${peso(l.net)}</span></div>
+    ${loanBal ? `<div class="sub">Loan balances after this pay day: ${loanBal}</div>` : ""}${inp.note ? `<div class="sub">Note: ${esc(inp.note)}</div>` : ""}
+  </div></div>
+  <div class="mf"><span class="sub">Employer share: SSS ${amt(l.gov.sssER + l.gov.ec)} · PhilHealth ${amt(l.gov.phER)} · Pag-IBIG ${amt(l.gov.piER)}</span><div class="row"><button class="btn" data-act="dl-one" data-run="${run.id}" data-emp="${empId}">Download</button><button class="btn primary" data-act="print-one" data-run="${run.id}" data-emp="${empId}">Print payslip</button></div></div>`, true);
+}
+
+// ---------- downloads ----------
+function offer(filename, data, type) {
+  const blob = new Blob([data], { type: type || (filename.endsWith(".csv") ? "text/csv" : filename.endsWith(".json") ? "application/json" : "text/html") });
+  const url = URL.createObjectURL(blob); const a = document.createElement("a");
+  a.href = url; a.download = filename.replace(/[\\/:*?"<>|]/g, "-"); document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000); toast("Downloaded " + filename);
+}
+function printDoc(html) {
+  const w = window.open("", "_blank"); if (!w) { toast("Allow pop-ups to print, or use Download instead."); return; }
+  w.document.write(html.replace("</body>", "<script>window.onload=()=>{window.print()}<\/script></body>")); w.document.close();
+}
+function payslipDoc(run, empIds) {
+  const slips = empIds.map(id => {
+    const l = lineFor(run, id); if (!l) return ""; const inp = (run.lines || {})[id] || {};
+    const { e, earn, ded } = slipHTML(run, l, inp);
+    const tr = (k, v) => v ? `<tr><td>${esc(k)}</td><td class="r">${amt(v)}</td></tr>` : "";
+    const loanBal = Object.entries(l.loanBalAfter || {}).map(([lid, b]) => `${esc((l.loanLabels || {})[lid])}: ${amt(b)}`).join(" · ");
+    return `<section class="slip"><header><div><div class="co">${esc(coName(e.company))}</div><div class="t">PAYSLIP</div></div><div class="pd">Pay day: <b>${fdate(run.payDate)}</b><br>Period: ${periodLabel(run)}</div></header>
+    <div class="who"><b>${esc(e.name)}</b> ${e.code ? "· " + esc(e.code) : ""} ${e.position ? "· " + esc(e.position) : ""}<br><small>SSS ${esc(e.sss || "—")} · PhilHealth ${esc(e.philhealth || "—")} · Pag-IBIG ${esc(e.pagibig || "—")} · TIN ${esc(e.tin || "—")}</small></div>
+    <div class="cols"><table><thead><tr><th>Earnings</th><th class="r">₱</th></tr></thead><tbody>${earn.map(([k, v]) => tr(k, v)).join("")}</tbody><tfoot><tr><td>Gross pay</td><td class="r">${amt(l.gross)}</td></tr></tfoot></table>
+    <table><thead><tr><th>Deductions</th><th class="r">₱</th></tr></thead><tbody>${ded.map(([k, v]) => tr(k, v)).join("")}</tbody><tfoot><tr><td>Total deductions</td><td class="r">${amt(l.deductions)}</td></tr></tfoot></table></div>
+    <div class="net">NET PAY <span>₱ ${amt(l.net)}</span></div>
+    ${loanBal ? `<small>Loan balance after this pay: ${loanBal}</small>` : ""} ${inp.note ? `<small>Note: ${esc(inp.note)}</small>` : ""}
+    <div class="sign"><span>Prepared by</span><span>Received by / Date</span></div></section>`;
+  }).join("");
+  return `<!doctype html><html><head><meta charset="utf-8"><title>Payslips ${run.payDate}</title><style>
+  @page{size:A4;margin:10mm} body{font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#111;margin:0}
+  .slip{border:1px solid #444;padding:10px 12px;height:136mm;box-sizing:border-box;margin-bottom:5mm;page-break-inside:avoid;display:flex;flex-direction:column;gap:6px}
+  .slip:nth-of-type(2n){page-break-after:always}
+  header{display:flex;justify-content:space-between;border-bottom:2px solid #1f6b47;padding-bottom:4px}
+  .co{font-weight:bold;font-size:13px;color:#1f6b47}.t{letter-spacing:.2em;font-size:10px}.pd{text-align:right}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:12px} table{width:100%;border-collapse:collapse} th,td{padding:2px 4px;border-bottom:1px solid #ddd;text-align:left} th{background:#eef2ec}
+  .r{text-align:right} tfoot td{font-weight:bold;border-top:1px solid #444}
+  .net{background:#e1efe6;color:#123d29;font-weight:bold;padding:6px 8px;display:flex;justify-content:space-between;font-size:13px}
+  .sign{margin-top:auto;display:flex;justify-content:space-between;gap:20px}.sign span{flex:1;border-top:1px solid #444;padding-top:2px;text-align:center;margin-top:22px}
+  small{color:#444}
+  </style></head><body>${slips}</body></html>`;
+}
+function csv(rows) { return rows.map(r => r.map(v => { const s = String(v ?? ""); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; }).join(",")).join("\n"); }
+function registerCSV(run) {
+  const head = ["Employee ID", "Name", "Company", "Position", "Monthly rate", "Basic", "Absences", "Late/UT", "Overtime", "RD/Special holiday", "Regular holiday", "Night diff", "Other earnings", "Allowance", "13th month", "Gross", "SSS EE", "PhilHealth EE", "Pag-IBIG EE", "Taxable", "Withholding tax", "Loans", "Other deductions", "Net pay", "SSS ER", "EC", "PhilHealth ER", "Pag-IBIG ER"];
+  const rows = runEmployees(run).map(id => { const l = lineFor(run, id); const e = l.emp || {};
+    return [e.code, e.name, coShort(e.company), e.position, l.monthlyRate, l.basic, l.absent, l.late, l.prem.otReg, r2(l.prem.rdSh + l.prem.rdShOt), r2(l.prem.rh + l.prem.rhOt), l.prem.nd, l.otherEarn, l.allowance, l.thirteenth, l.gross, l.gov.sssEE, l.gov.phEE, l.gov.piEE, l.taxable, l.tax, l.loanTotal, l.otherDed, l.net, l.gov.sssER, l.gov.ec, l.gov.phER, l.gov.piER]; });
+  return csv([head, ...rows]);
+}
+
+// ---------- actions ----------
+async function finalizeRun(run) {
+  const results = {};
+  for (const id of runEmployees(run)) { const l = lineFor(run, id); if (l) results[id] = JSON.parse(JSON.stringify(l)); }
+  const doc = Object.assign({}, run, { status: "final", results, finalizedAt: new Date().toISOString() }); delete doc.id;
+  Object.assign(run, doc);
+  setDoc("runs/" + run.id, doc).then(() => toast("Payroll finalized"));
+  render(true);
+}
+function confirmModal(title, body, act, label, data) {
+  openModal(`<div class="mh"><h2>${title}</h2></div><div class="mb"><p style="margin:0">${body}</p></div>
+  <div class="mf"><span></span><div class="row"><button class="btn" data-act="close">Cancel</button><button class="btn ${act.startsWith("do-del") ? "danger" : "primary"}" data-act="${act}" ${Object.entries(data || {}).map(([k, v]) => `data-${k}="${esc(v)}"`).join(" ")}>${label}</button></div></div>`);
+}
+
+document.addEventListener("click", ev => {
+  const t = ev.target.closest("[data-tab],[data-act],[data-open-run],[data-edit-emp],[data-edit-loan],[data-more],[data-slip],[data-scrim]");
+  if (!t) return;
+  if (t.hasAttribute("data-scrim")) { if (ev.target === t) closeModal(); return; }
+  if (t.dataset.tab) { st.tab = t.dataset.tab; st.openRun = null; render(true); window.scrollTo(0, 0); return; }
+  if (t.dataset.openRun) { st.tab = "runs"; st.openRun = t.dataset.openRun; render(true); window.scrollTo(0, 0); return; }
+  if (t.dataset.editEmp) return empModal(t.dataset.editEmp);
+  if (t.dataset.editLoan) return loanModal(t.dataset.editLoan);
+  if (t.dataset.more) return moreModal(st.openRun, t.dataset.more);
+  if (t.dataset.slip) return slipPreview(st.runs.find(r => r.id === st.openRun), t.dataset.slip);
+  const run = st.runs.find(r => r.id === st.openRun);
+  switch (t.dataset.act) {
+    case "close": return closeModal();
+    case "new-emp": return empModal(null);
+    case "save-emp": return saveEmp(t.dataset.id);
+    case "del-emp": { const id = t.dataset.id; const inRuns = finalizedRuns().some(r => (r.results || {})[id]);
+      if (inRuns) { const e = Object.assign({}, empById(id), { status: "inactive" }); delete e.id; setDoc("employees/" + id, e).then(() => toast("Marked inactive")); return closeModal(); }
+      return confirmModal("Delete employee?", `${esc(empById(id)?.name)} has no finalized payroll and will be removed.`, "do-del-emp", "Delete", { id }); }
+    case "do-del-emp": delDoc("employees/" + t.dataset.id).then(() => toast("Employee deleted")); return closeModal();
+    case "new-loan": return loanModal(null);
+    case "save-loan": return saveLoan(t.dataset.id);
+    case "del-loan": return confirmModal("Delete loan?", "This loan has no deductions yet and will be removed.", "do-del-loan", "Delete", { id: t.dataset.id });
+    case "do-del-loan": delDoc("loans/" + t.dataset.id).then(() => toast("Loan deleted")); return closeModal();
+    case "new-run": return newRunModal(+t.dataset.y, +t.dataset.m, t.dataset.kind);
+    case "create-run": return createRun();
+    case "back-runs": st.openRun = null; return render(true);
+    case "save-more": return saveMore(t.dataset.run, t.dataset.emp);
+    case "finalize": { const tt = runTotals(run);
+      return confirmModal("Finalize this payroll?", `Net pay of <b>${peso(tt.net)}</b> for ${tt.count} employees on ${fdate(run.payDate)}. Amounts are locked, loan balances go down, and payslips become available. You can reopen it later if you need to correct something.`, "do-finalize", "Finalize payroll"); }
+    case "do-finalize": closeModal(); return finalizeRun(run);
+    case "reopen": return confirmModal("Reopen this payroll?", "It goes back to draft and is recomputed from current employee rates and loan balances. Finalize it again when done.", "do-reopen", "Reopen");
+    case "do-reopen": { closeModal(); const doc = Object.assign({}, run, { status: "draft" }); delete doc.id; delete doc.results; delete doc.finalizedAt; delete run.results; run.status = "draft"; setDoc("runs/" + run.id, doc); return render(true); }
+    case "del-run": return confirmModal("Delete this draft?", "The attendance entered for this pay day will be removed.", "do-del-run", "Delete draft");
+    case "do-del-run": { closeModal(); const id = run.id; st.runs = st.runs.filter(r => r.id !== id); st.openRun = null; delDoc("runs/" + id); return render(true); }
+    case "dl-slips": return offer(`Payslips ${run.payDate} ${run.company === "all" ? "All" : coShort(run.company)}.html`, payslipDoc(run, runEmployees(run)));
+    case "dl-one": { const r = st.runs.find(x => x.id === t.dataset.run); const e = lineFor(r, t.dataset.emp).emp || {}; return offer(`Payslip ${r.payDate} ${e.name}.html`, payslipDoc(r, [t.dataset.emp])); }
+    case "print-slips": return printDoc(payslipDoc(run, runEmployees(run)));
+    case "print-one": { const r = st.runs.find(x => x.id === t.dataset.run); return printDoc(payslipDoc(r, [t.dataset.emp])); }
+    case "backup": { const d = new Date(); return offer(`Clover Life Payroll backup ${d.toISOString().slice(0, 10)}.json`, JSON.stringify(Object.assign({ app: "clover-life-payroll", version: 1, exportedAt: d.toISOString() }, store), null, 1)); }
+    case "restore": return document.getElementById("restore-file").click();
+    case "do-restore": { closeModal(); if (!pendingRestore) return; store = pendingRestore; pendingRestore = null; saveStore(); syncState(); st.openRun = null; render(true); return toast("Backup restored"); }
+    case "dl-register": return offer(`Payroll register ${run.payDate}.csv`, registerCSV(run));
+    case "dl-13": { const y = st.year13; const rows = st.employees.map(e => { const p = prior13(e.id, y); return [e.code, e.name, coShort(e.company), p.basic, r2(p.basic / 12), p.paid, r2(Math.max(0, p.basic / 12 - p.paid))]; });
+      return offer(`13th month ${y}.csv`, csv([["Employee ID", "Name", "Company", "Basic earned", "13th month to date", "Paid", "Remaining"], ...rows])); }
+    case "dl-remit": { const { list } = remitData(st.reportMonth);
+      return offer(`Remittances ${st.reportMonth}.csv`, csv([["Name", "Company", "SSS no.", "SSS EE", "SSS ER", "EC", "PhilHealth no.", "PhilHealth EE", "PhilHealth ER", "Pag-IBIG no.", "Pag-IBIG EE", "Pag-IBIG ER", "TIN", "Gross", "Tax withheld"],
+        ...list.map(p => [p.name, coShort(p.company), p.sss, p.sssEE, p.sssER, p.ec, p.philhealth, p.phEE, p.phER, p.pagibig, p.piEE, p.piER, p.tin, p.gross, p.tax])])); }
+    case "save-settings": {
+      const s = S(); const out = { companies: s.companies.map((c, i) => ({ id: c.id, name: val("set-co-" + i) || c.name, short: val("set-cos-" + i) })), daysFactor: num(val("set-daysFactor")), hoursPerDay: num(val("set-hoursPerDay")) || 8, contribTiming: val("set-contribTiming"), mult: {} };
+      for (const k of ["sssEE", "sssER", "mscMin", "mscMax", "phRate", "phFloor", "phCeil", "piRate", "piCap"]) out[k] = num(val("set-" + k));
+      for (const k of Object.keys(DEFAULT_SETTINGS.mult)) out.mult[k] = num(val("set-m-" + k));
+      st.settings = Object.assign({}, st.settings, out);
+      setDoc("settings/main", st.settings).then(() => toast("Settings saved")); return render(true);
+    }
+  }
+});
+document.addEventListener("change", ev => {
+  const el = ev.target;
+  if (el.id === "restore-file" && el.files && el.files[0]) {
+    const f = el.files[0]; const rd = new FileReader();
+    rd.onload = () => { try { const d = JSON.parse(rd.result); if (d.app !== "clover-life-payroll") throw 0;
+        pendingRestore = { settings: d.settings || null, employees: d.employees || {}, loans: d.loans || {}, runs: d.runs || {} };
+        confirmModal("Restore this backup?", `Backup from <b>${esc((d.exportedAt || "").slice(0, 10))}</b> with ${Object.keys(pendingRestore.employees).length} employees and ${Object.keys(pendingRestore.runs).length} payroll runs. It replaces everything currently in this browser.`, "do-restore", "Restore backup");
+      } catch (e) { toast("That file isn't a Clover Life Payroll backup."); } };
+    rd.readAsText(f); el.value = ""; return;
+  }
+  if (el.id === "emp-filter") { st.empFilter = el.value; return render(true); }
+  if (el.id === "emp-inactive") { st.showInactive = el.checked; return render(true); }
+  if (el.id === "year13") { st.year13 = +el.value; return render(true); }
+  if (el.id === "rep-month") { st.reportMonth = el.value; return render(true); }
+  if (el.id === "r-month" || el.id === "r-kind" || el.id === "r-co") return updateRunPreview();
+  if (el.id === "run-13") { const run = st.runs.find(r => r.id === st.openRun); run.include13 = el.checked; const d = Object.assign({}, run); delete d.id; setDoc("runs/" + run.id, d); return render(true); }
+  if (el.dataset && el.dataset.line) {
+    const run = st.runs.find(r => r.id === st.openRun); const empId = el.dataset.line;
+    const cur = Object.assign({}, (run.lines || {})[empId] || {});
+    if (el.value.trim() === "") delete cur[el.dataset.k]; else cur[el.dataset.k] = num(el.value);
+    setLine(run, empId, cur);
+    // move focus naturally; re-render after focus settles
+    setTimeout(() => render(), 0);
+  }
+});
+document.addEventListener("input", ev => { if (ev.target.id === "emp-search") { st.empSearch = ev.target.value; const pos = ev.target.selectionStart; render(true); const n = document.getElementById("emp-search"); n.focus(); n.setSelectionRange(pos, pos); } });
+document.addEventListener("keydown", ev => {
+  if (ev.key === "Escape" && document.getElementById("modal-root").innerHTML) closeModal();
+  if (ev.key === "Enter" && ev.target.classList && ev.target.classList.contains("cell")) { ev.preventDefault(); const cells = [...document.querySelectorAll("input.cell")]; const i = cells.indexOf(ev.target); (cells[i + 5] || cells[i + 1] || ev.target).focus(); }
+});
+document.addEventListener("submit", ev => ev.preventDefault());
+
+// ---------- boot ----------
+(function boot() {
+  loadStore(); syncState(); st.ready = true; render(true);
+  window.addEventListener("storage", e => { if (e.key === STORE_KEY) { loadStore(); syncState(); render(); } });
+})();
+</script>
+</body>
+</html>
